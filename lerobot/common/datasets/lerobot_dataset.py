@@ -95,6 +95,11 @@ class LeRobotDatasetMetadata:
         allow_patterns: list[str] | str | None = None,
         ignore_patterns: list[str] | str | None = None,
     ) -> None:
+        
+        if self.local_files_only:
+            logging.info("📂 仅使用本地文件，跳过 pull_from_repo()")
+            return
+    
         snapshot_download(
             self.repo_id,
             repo_type="dataset",
@@ -514,6 +519,11 @@ class LeRobotDataset(torch.utils.data.Dataset):
         allow_patterns: list[str] | str | None = None,
         ignore_patterns: list[str] | str | None = None,
     ) -> None:
+        
+        if self.local_files_only:
+            logging.info("📂 仅使用本地文件，跳过 pull_from_repo()")
+            return
+        
         snapshot_download(
             self.repo_id,
             repo_type="dataset",
@@ -532,6 +542,11 @@ class LeRobotDataset(torch.utils.data.Dataset):
         """
         # TODO(rcadene, aliberts): implement faster transfer
         # https://huggingface.co/docs/huggingface_hub/en/guides/download#faster-downloads
+        
+        if self.local_files_only:
+            logging.info("📂 仅使用本地数据，跳过 `download_episodes()`")
+            return
+        
         files = None
         ignore_patterns = None if download_videos else "videos/"
         if self.episodes is not None:

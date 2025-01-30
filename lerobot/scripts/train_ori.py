@@ -1,18 +1,18 @@
-#！/usr/bin/env python
+#!/usr/bin/env python
 
-# 版权所有 2024 The HuggingFace， Inc. 团队。保留所有权利。
+# Copyright 2024 The HuggingFace Inc. team. All rights reserved.
 #
-# 根据 Apache 许可证 2.0 版（“许可证”）获得许可;
-# 除非遵守许可，否则您不得使用此文件。
-# 您可以在以下网址获取许可证副本
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
-# 除非适用法律要求或书面同意，否则软件
-# 根据许可分发的依据是按“原样”分发的，
-# 不附带任何明示或暗示的保证或条件。
-# 请参阅许可证，了解管理权限的特定语言，以及
-# 许可证的限制。
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import logging
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -120,11 +120,11 @@ def update_policy(
     policy.train()
     with torch.autocast(device_type=device.type) if use_amp else nullcontext():
         output_dict = policy.forward(batch)
-        # TODO（rcadene）： policy.unnormalize_outputs（out_dict）
+        # TODO(rcadene): policy.unnormalize_outputs(out_dict)
         loss = output_dict["loss"]
     grad_scaler.scale(loss).backward()
 
-    # 在梯度裁剪之前就地取消优化器分配的参数的缩放。
+    # Unscale the graident of the optimzer's assigned params in-place **prior to gradient clipping**.
     grad_scaler.unscale_(optimizer)
 
     grad_norm = torch.nn.utils.clip_grad_norm_(
@@ -133,11 +133,11 @@ def update_policy(
         error_if_nonfinite=False,
     )
 
-    # Optimizer 的梯度已经未缩放，因此 scaler.step 不会取消缩放它们，
-    # 尽管如果梯度包含 infs 或 NaNs，它仍然会跳过 optimizer.step（）。
+    # Optimizer's gradients are already unscaled, so scaler.step does not unscale them,
+    # although it still skips optimizer.step() if the gradients contain infs or NaNs.
     with lock if lock is not None else nullcontext():
         grad_scaler.step(optimizer)
-    # 更新下一次迭代的比例。
+    # Updates the scale for next iteration.
     grad_scaler.update()
 
     optimizer.zero_grad()
@@ -146,7 +146,7 @@ def update_policy(
         lr_scheduler.step()
 
     if isinstance(policy, PolicyWithUpdate):
-        # 可能更新内部缓冲区（例如，像 TDMPC 中的指数移动平均线）。
+        # To possibly update an internal buffer (for instance an Exponential Moving Average like in TDMPC).
         policy.update()
 
     info = {
@@ -168,26 +168,26 @@ def log_train_info(logger: Logger, info, step, cfg, dataset, is_online):
     update_s = info["update_s"]
     dataloading_s = info["dataloading_s"]
 
-    # 样本是 （observation，action） 对，其中 observation 和 action
-    # 可以位于多个时间戳上。在一个批次中，我们有 'batch_size' 个样本。
+    # A sample is an (observation,action) pair, where observation and action
+    # can be on multiple timestamps. In a batch, we have `batch_size`` number of samples.
     num_samples = (step + 1) * cfg.training.batch_size
     avg_samples_per_ep = dataset.num_frames / dataset.num_episodes
     num_episodes = num_samples / avg_samples_per_ep
     num_epochs = num_samples / dataset.num_frames
     log_items = [
         f"step:{format_big_number(step)}",
-        # 训练期间看到的样本数
+        # number of samples seen during training
         f"smpl:{format_big_number(num_samples)}",
-        # 训练期间看到的发作次数
+        # number of episodes seen during training
         f"ep:{format_big_number(num_episodes)}",
-        # 看到所有唯一样本的次数
+        # number of time all unique samples are seen
         f"epch:{num_epochs:.2f}",
         f"loss:{loss:.3f}",
         f"grdn:{grad_norm:.3f}",
         f"lr:{lr:0.1e}",
-        # 以秒为单位
+        # in seconds
         f"updt_s:{update_s:.3f}",
-        f"data_s:{dataloading_s:.3f}",  # 如果不是 ~0，则您受到 CPU 或 IO 的瓶颈
+        f"data_s:{dataloading_s:.3f}",  # if not ~0, you are bottlenecked by cpu or io
     ]
     logging.info(" ".join(log_items))
 
@@ -205,19 +205,19 @@ def log_eval_info(logger, info, step, cfg, dataset, is_online):
     avg_sum_reward = info["avg_sum_reward"]
     pc_success = info["pc_success"]
 
-    # 样本是 （observation，action） 对，其中 observation 和 action
-    # 可以位于多个时间戳上。在一个批次中，我们有 'batch_size' 个样本。
+    # A sample is an (observation,action) pair, where observation and action
+    # can be on multiple timestamps. In a batch, we have `batch_size`` number of samples.
     num_samples = (step + 1) * cfg.training.batch_size
     avg_samples_per_ep = dataset.num_frames / dataset.num_episodes
     num_episodes = num_samples / avg_samples_per_ep
     num_epochs = num_samples / dataset.num_frames
     log_items = [
         f"step:{format_big_number(step)}",
-        # 训练期间看到的样本数
+        # number of samples seen during training
         f"smpl:{format_big_number(num_samples)}",
-        # 训练期间看到的发作次数
+        # number of episodes seen during training
         f"ep:{format_big_number(num_episodes)}",
-        # 看到所有唯一样本的次数
+        # number of time all unique samples are seen
         f"epch:{num_epochs:.2f}",
         f"∑rwrd:{avg_sum_reward:.3f}",
         f"success:{pc_success:.1f}%",
@@ -246,8 +246,8 @@ def train(cfg: DictConfig, out_dir: str | None = None, job_name: str | None = No
     if cfg.training.online_steps > 0 and isinstance(cfg.dataset_repo_id, ListConfig):
         raise NotImplementedError("Online training with LeRobotMultiDataset is not implemented.")
 
-    # 如果我们要恢复运行，我们需要检查日志目录中是否存在检查点，并且我们需要
-    # 来检查提供的配置与 checkpoint 的 config 之间是否有任何差异。
+    # If we are resuming a run, we need to check that a checkpoint exists in the log directory, and we need
+    # to check for any differences between the provided config and the checkpoint's config.
     if cfg.resume:
         if not Logger.get_last_checkpoint_dir(out_dir).exists():
             raise RuntimeError(
@@ -262,24 +262,24 @@ def train(cfg: DictConfig, out_dir: str | None = None, job_name: str | None = No
                 attrs=["bold"],
             )
         )
-        # 从最后一个检查点获取配置文件。
+        # Get the configuration file from the last checkpoint.
         checkpoint_cfg = init_hydra_config(checkpoint_cfg_path)
-        # 检查 checkpoint 配置和提供的配置之间的差异。
-        # Hack 提前解决 delta_timestamps 以便正确 diff。
+        # Check for differences between the checkpoint configuration and provided configuration.
+        # Hack to resolve the delta_timestamps ahead of time in order to properly diff.
         resolve_delta_timestamps(cfg)
         diff = DeepDiff(OmegaConf.to_container(checkpoint_cfg), OmegaConf.to_container(cfg))
-        # 忽略 'resume' 和参数。
+        # Ignore the `resume` and parameters.
         if "values_changed" in diff and "root['resume']" in diff["values_changed"]:
             del diff["values_changed"]["root['resume']"]
-        # 记录有关 checkpoint 配置与提供的
-        # 配置。
+        # Log a warning about differences between the checkpoint configuration and the provided
+        # configuration.
         if len(diff) > 0:
             logging.warning(
                 "At least one difference was detected between the checkpoint configuration and "
                 f"the provided configuration: \n{pformat(diff)}\nNote that the checkpoint configuration "
                 "takes precedence.",
             )
-        # 使用 checkpoint 配置而不是提供的配置（但保留 'resume' 参数）。
+        # Use the checkpoint config instead of the provided config (but keep `resume` parameter).
         cfg = checkpoint_cfg
         cfg.resume = True
     elif Logger.get_last_checkpoint_dir(out_dir).exists():
@@ -298,12 +298,12 @@ def train(cfg: DictConfig, out_dir: str | None = None, job_name: str | None = No
             f"or lower the batch size (e.g. `eval.batch_size={cfg.eval.n_episodes}`)."
         )
 
-    # 将指标记录到终端和 wandb
+    # log metrics to terminal and wandb
     logger = Logger(cfg, out_dir, wandb_job_name=job_name)
 
     set_global_seed(cfg.seed)
 
-    # 检查设备是否可用
+    # Check device is available
     device = get_safe_torch_device(cfg.device, log=True)
 
     torch.backends.cudnn.benchmark = True
@@ -317,9 +317,9 @@ def train(cfg: DictConfig, out_dir: str | None = None, job_name: str | None = No
             f"{pformat(offline_dataset.repo_id_to_index , indent=2)}"
         )
 
-    # 创建用于在模拟数据训练期间评估检查点的环境。
-    # 对于真实世界的数据，无需创建环境，因为评估是在 train.py 之外完成的。
-    # 改用 eval.py，使用 gym_dora 环境和 Dora-RS。
+    # Create environment used for evaluating checkpoints during training on simulation data.
+    # On real-world data, no need to create an environment as evaluations are done outside train.py,
+    # using the eval.py instead, with gym_dora environment and dora-rs.
     eval_env = None
     if cfg.training.eval_freq > 0:
         logging.info("make_env")
@@ -332,12 +332,12 @@ def train(cfg: DictConfig, out_dir: str | None = None, job_name: str | None = No
         pretrained_policy_name_or_path=str(logger.last_pretrained_model_dir) if cfg.resume else None,
     )
     assert isinstance(policy, nn.Module)
-    # 创建优化器和调度器
-    # 将优化器移出策略的临时 hack
+    # Create optimizer and scheduler
+    # Temporary hack to move optimizer out of policy
     optimizer, lr_scheduler = make_optimizer_and_scheduler(cfg, policy)
     grad_scaler = GradScaler(enabled=cfg.use_amp)
 
-    step = 0  # 策略更新次数（向前 + 向后 + 最佳）
+    step = 0  # number of policy updates (forward + backward + optim)
 
     if cfg.resume:
         step = logger.load_last_training_state(optimizer, lr_scheduler)
@@ -354,7 +354,7 @@ def train(cfg: DictConfig, out_dir: str | None = None, job_name: str | None = No
     logging.info(f"{num_learnable_params=} ({format_big_number(num_learnable_params)})")
     logging.info(f"{num_total_params=} ({format_big_number(num_total_params)})")
 
-    # 注意：此帮助程序将用于离线和在线训练循环。
+    # Note: this helper will be used in offline and online training loops.
     def evaluate_and_checkpoint_if_needed(step, is_online):
         _num_digits = max(6, len(str(cfg.training.offline_steps + cfg.training.online_steps)))
         step_identifier = f"{step:0{_num_digits}d}"
@@ -381,8 +381,8 @@ def train(cfg: DictConfig, out_dir: str | None = None, job_name: str | None = No
             or step == cfg.training.offline_steps + cfg.training.online_steps
         ):
             logging.info(f"Checkpoint policy after step {step}")
-            # 注意：使用 step 作为标识符进行保存，并将其格式设置为至少 6 位数字，但如果
-            # 需要（选择 6 作为最小值以保持一致性，而不会矫枉过正）。
+            # Note: Save with step as the identifier, and format it to have at least 6 digits but more if
+            # needed (choose 6 as a minimum for consistency without being overkill).
             logger.save_checkpoint(
                 step,
                 policy,
@@ -392,7 +392,7 @@ def train(cfg: DictConfig, out_dir: str | None = None, job_name: str | None = No
             )
             logging.info("Resume training")
 
-    # 创建用于离线训练的 DataLoader
+    # create dataloader for offline training
     if cfg.training.get("drop_n_last_frames"):
         shuffle = False
         sampler = EpisodeAwareSampler(
@@ -442,12 +442,12 @@ def train(cfg: DictConfig, out_dir: str | None = None, job_name: str | None = No
         if step % cfg.training.log_freq == 0:
             log_train_info(logger, train_info, step, cfg, offline_dataset, is_online=False)
 
-        # 注意：evaluate_and_checkpoint_if_needed发生在“step”训练更新完成后，
-        # 所以我们传入步骤 + 1。
+        # Note: evaluate_and_checkpoint_if_needed happens **after** the `step`th training update has completed,
+        # so we pass in step + 1.
         evaluate_and_checkpoint_if_needed(step + 1, is_online=False)
 
         step += 1
-        offline_step += 1  # 型号： SIM113
+        offline_step += 1  # noqa: SIM113
 
     if cfg.training.online_steps == 0:
         if eval_env:
@@ -455,15 +455,15 @@ def train(cfg: DictConfig, out_dir: str | None = None, job_name: str | None = No
         logging.info("End of training")
         return
 
-    # 在线培训。
+    # Online training.
 
-    # 从策略推出创建专用于在线剧集集合的环境。
+    # Create an env dedicated to online episodes collection from policy rollout.
     online_env = make_env(cfg, n_envs=cfg.training.online_rollout_batch_size)
     resolve_delta_timestamps(cfg)
     online_buffer_path = logger.log_dir / "online_buffer"
     if cfg.resume and not online_buffer_path.exists():
-        # 如果我们要恢复运行，则默认使用保存的在线数据形状和缓冲区容量
-        # 缓冲区。
+        # If we are resuming a run, we default to the data shapes and buffer capacity from the saved online
+        # buffer.
         logging.warning(
             "When online training is resumed, we load the latest online buffer from the prior run, "
             "and this might not coincide with the state of the buffer as it was at the moment the checkpoint "
@@ -484,18 +484,18 @@ def train(cfg: DictConfig, out_dir: str | None = None, job_name: str | None = No
         delta_timestamps=cfg.training.delta_timestamps,
     )
 
-    # 如果我们异步执行在线部署，请深复制用于在线部署的策略（此
-    # 可以与训练更新并行进行在线部署）。
+    # If we are doing online rollouts asynchronously, deepcopy the policy to use for online rollouts (this
+    # makes it possible to do online rollouts in parallel with training updates).
     online_rollout_policy = deepcopy(policy) if cfg.training.do_online_rollout_async else policy
 
-    # 创建用于在线培训的数据加载器。
+    # Create dataloader for online training.
     concat_dataset = torch.utils.data.ConcatDataset([offline_dataset, online_dataset])
     sampler_weights = compute_sampler_weights(
         offline_dataset,
         offline_drop_n_last_frames=cfg.training.get("drop_n_last_frames", 0),
         online_dataset=online_dataset,
-        # +1，因为联机转出会为“最终观察”返回一个额外的帧。注意：我们没有
-        # 这是离线数据集中的最后一个观察结果，但我们可能会在将来添加它们。
+        # +1 because online rollouts return an extra frame for the "final observation". Note: we don't have
+        # this final observation in the offline datasets, but we might add them in future.
         online_drop_n_last_frames=cfg.training.get("drop_n_last_frames", 0) + 1,
         online_sampling_ratio=cfg.training.online_sampling_ratio,
     )
@@ -514,18 +514,18 @@ def train(cfg: DictConfig, out_dir: str | None = None, job_name: str | None = No
     )
     dl_iter = cycle(dataloader)
 
-    # 用于异步在线推出的锁和线程池执行程序。禁用异步模式时，
-    # 这些仍在使用，但实际上没有任何作用。
+    # Lock and thread pool executor for asynchronous online rollouts. When asynchronous mode is disabled,
+    # these are still used but effectively do nothing.
     lock = Lock()
-    # 注意：1 个 worker，因为我们一次只想运行一组在线部署。批
-    # 转出的并行化在 Job 中处理。
+    # Note: 1 worker because we only ever want to run one set of online rollouts at a time. Batch
+    # parallelization of rollouts is handled within the job.
     executor = ThreadPoolExecutor(max_workers=1)
 
     online_step = 0
-    online_rollout_s = 0  # 进行在线部署所需的时间
-    update_online_buffer_s = 0  # 使用 Online Rollout 数据更新 Online 缓冲区所花费的时间
-    # 等待联机缓冲区完成更新所花费的时间。这在使用 async
-    # 在线推出选项。
+    online_rollout_s = 0  # time take to do online rollout
+    update_online_buffer_s = 0  # time taken to update the online buffer with the online rollout data
+    # Time taken waiting for the online buffer to finish being updated. This is relevant when using the async
+    # online rollout option.
     await_update_online_buffer_s = 0
     rollout_start_seed = cfg.training.online_env_seed
 
@@ -560,16 +560,16 @@ def train(cfg: DictConfig, out_dir: str | None = None, job_name: str | None = No
                 start_update_buffer_time = time.perf_counter()
                 online_dataset.add_data(eval_info["episodes"])
 
-                # 更新采样期间使用的串联数据集长度。
+                # Update the concatenated dataset length used during sampling.
                 concat_dataset.cumulative_sizes = concat_dataset.cumsum(concat_dataset.datasets)
 
-                # 更新采样权重。
+                # Update the sampling weights.
                 sampler.weights = compute_sampler_weights(
                     offline_dataset,
                     offline_drop_n_last_frames=cfg.training.get("drop_n_last_frames", 0),
                     online_dataset=online_dataset,
-                    # +1，因为联机转出会为“最终观察”返回一个额外的帧。注意：我们没有
-                    # 这是离线数据集中的最后一个观察结果，但我们可能会在将来添加它们。
+                    # +1 because online rollouts return an extra frame for the "final observation". Note: we don't have
+                    # this final observation in the offline datasets, but we might add them in future.
                     online_drop_n_last_frames=cfg.training.get("drop_n_last_frames", 0) + 1,
                     online_sampling_ratio=cfg.training.online_sampling_ratio,
                 )
@@ -580,8 +580,8 @@ def train(cfg: DictConfig, out_dir: str | None = None, job_name: str | None = No
             return online_rollout_s, update_online_buffer_s
 
         future = executor.submit(sample_trajectory_and_update_buffer)
-        # 如果我们没有进行异步推出，或者我们的缓冲区中还没有获得足够的示例，请等待
-        # 直到转出和缓冲区更新完成，然后再继续执行策略更新步骤。
+        # If we aren't doing async rollouts, or if we haven't yet gotten enough examples in our buffer, wait
+        # here until the rollout and buffer update is done, before proceeding to the policy update steps.
         if (
             not cfg.training.do_online_rollout_async
             or len(online_dataset) <= cfg.training.online_buffer_seed_size
@@ -625,15 +625,15 @@ def train(cfg: DictConfig, out_dir: str | None = None, job_name: str | None = No
             if step % cfg.training.log_freq == 0:
                 log_train_info(logger, train_info, step, cfg, online_dataset, is_online=True)
 
-            # 注意：evaluate_and_checkpoint_if_needed发生在“step”训练更新完成后，
-            # 所以我们传入步骤 + 1。
+            # Note: evaluate_and_checkpoint_if_needed happens **after** the `step`th training update has completed,
+            # so we pass in step + 1.
             evaluate_and_checkpoint_if_needed(step + 1, is_online=True)
 
             step += 1
             online_step += 1
 
-        # 如果我们正在进行异步部署，我们现在应该等到完成异步部署后再继续
-        # 以执行下一批转出。
+        # If we're doing async rollouts, we should now wait until we've completed them before proceeding
+        # to do the next batch of rollouts.
         if future.running():
             start = time.perf_counter()
             online_rollout_s, update_online_buffer_s = future.result()

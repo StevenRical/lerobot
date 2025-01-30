@@ -119,27 +119,28 @@ wandb login
 
 ```
 .
-├── examples             # contains demonstration examples, start here to learn about LeRobot
-|   └── advanced         # contains even more examples for those who have mastered the basics
+├── examples             # 包含演示示例，从这里开始学习 LeRobot
+|   └── advanced         # 包含更多示例，适合已经掌握基础知识的用户
 ├── lerobot
-|   ├── configs          # contains hydra yaml files with all options that you can override in the command line
-|   |   ├── default.yaml   # selected by default, it loads pusht environment and diffusion policy
-|   |   ├── env            # various sim environments and their datasets: aloha.yaml, pusht.yaml, xarm.yaml
-|   |   └── policy         # various policies: act.yaml, diffusion.yaml, tdmpc.yaml
-|   ├── common           # contains classes and utilities
-|   |   ├── datasets       # various datasets of human demonstrations: aloha, pusht, xarm
-|   |   ├── envs           # various sim environments: aloha, pusht, xarm
-|   |   ├── policies       # various policies: act, diffusion, tdmpc
-|   |   ├── robot_devices  # various real devices: dynamixel motors, opencv cameras, koch robots
-|   |   └── utils          # various utilities
-|   └── scripts          # contains functions to execute via command line
-|       ├── eval.py                 # load policy and evaluate it on an environment
-|       ├── train.py                # train a policy via imitation learning and/or reinforcement learning
-|       ├── control_robot.py        # teleoperate a real robot, record data, run a policy
-|       ├── push_dataset_to_hub.py  # convert your dataset into LeRobot dataset format and upload it to the Hugging Face hub
-|       └── visualize_dataset.py    # load a dataset and render its demonstrations
-├── outputs               # contains results of scripts execution: logs, videos, model checkpoints
-└── tests                 # contains pytest utilities for continuous integration
+|   ├── configs          # 包含 hydra 的 YAML 文件，所有选项都可以在命令行中覆盖
+|   |   ├── default.yaml   # 默认选择，加载 pusht 环境和 diffusion 策略
+|   |   ├── env            # 各种模拟环境及其数据集：aloha.yaml、pusht.yaml、xarm.yaml
+|   |   └── policy         # 各种策略：act.yaml、diffusion.yaml、tdmpc.yaml
+|   ├── common           # 包含类和工具
+|   |   ├── datasets       # 各种人类演示数据集：aloha、pusht、xarm
+|   |   ├── envs           # 各种模拟环境：aloha、pusht、xarm
+|   |   ├── policies       # 各种策略：act、diffusion、tdmpc
+|   |   ├── robot_devices  # 各种真实设备：dynamixel 电机、opencv 摄像头、koch 机器人
+|   |   └── utils          # 各种工具
+|   └── scripts          # 包含可通过命令行执行的功能
+|       ├── eval.py                 # 加载策略并在环境中评估
+|       ├── train.py                # 通过模仿学习和/或强化学习训练策略
+|       ├── control_robot.py        # 远程操作真实机器人、记录数据、运行策略
+|       ├── push_dataset_to_hub.py  # 将数据集转换为 LeRobot 格式并上传到 Hugging Face Hub
+|       └── visualize_dataset.py    # 加载数据集并渲染其演示
+├── outputs               # 包含脚本执行的结果：日志、视频、模型检查点
+└── tests                 # 包含用于持续集成的 pytest 工具
+
 ```
 
 ### Visualize datasets

@@ -153,3 +153,29 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+*.mp4
+
+my_local_data_dir/aloha_state_coffee/.gitattributes
+
+my_local_data_dir/aloha_state_coffee/meta/episodes.jsonl
+
+my_local_data_dir/aloha_state_coffee/meta/info.json
+
+my_local_data_dir/aloha_state_coffee/meta/stats.json
+
+my_local_data_dir/aloha_state_coffee/meta/tasks.jsonl
+
+my_local_data_dir/aloha_state_coffee/README.md
+
+my_local_data_dir/pusht/.gitattributes
+
+my_local_data_dir/pusht/meta/episodes.jsonl
+
+my_local_data_dir/pusht/meta/info.json
+
+my_local_data_dir/pusht/meta/stats.json
+
+my_local_data_dir/pusht/meta/tasks.jsonl
+
+my_local_data_dir/pusht/README.md
